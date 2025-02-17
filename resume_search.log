@@ -1,0 +1,15 @@
+2025-02-17 16:18:06,625 - INFO - Successfully inserted 3 records
+2025-02-17 16:18:10,143 - INFO - Successfully inserted 3 records
+2025-02-17 16:18:12,675 - INFO - Successfully inserted 3 records
+2025-02-17 16:53:40,579 - ERROR - Error processing file: 'Database' object has no attribute 'insert_data'
+2025-02-17 16:53:46,461 - ERROR - Error processing file: 'Database' object has no attribute 'insert_data'
+2025-02-17 16:55:20,627 - ERROR - Error processing file: 'Database' object has no attribute 'insert_data'
+2025-02-17 16:55:31,118 - ERROR - Error processing file: 'Database' object has no attribute 'insert_data'
+2025-02-17 16:56:46,251 - ERROR - Error processing file: 'Database' object has no attribute 'insert_data'
+2025-02-17 16:59:42,902 - ERROR - Error processing file: 'Database' object has no attribute 'insert_data'
+2025-02-17 17:01:41,588 - ERROR - Error processing file: 'Database' object has no attribute 'insert_data'
+2025-02-17 17:01:47,905 - ERROR - Error processing file: 'Database' object has no attribute 'insert_data'
+2025-02-17 17:10:05,885 - ERROR - Error processing file: 'Database' object has no attribute 'insert_data'
+2025-02-17 17:10:14,424 - ERROR - Error processing file: 'Database' object has no attribute 'insert_data'
+2025-02-17 17:15:42,786 - ERROR - Error processing file: 'Database' object has no attribute 'insert_data'
+2025-02-17 17:21:02,504 - ERROR - Error processing file: 'Database' object has no attribute 'insert_data'
