@@ -30,6 +30,8 @@ class SparkSearchApp:
             st.session_state.columns = []
         if "df" not in st.session_state:
             st.session_state.df = None
+        if "results" not in st.session_state:
+            st.session_state.results = pd.DataFrame()  # Empty dataframe as default
 
     def handle_file_upload(self, uploaded_file):
         """Handle file upload and processing."""
@@ -39,9 +41,11 @@ class SparkSearchApp:
             else:
                 df = pd.read_excel(uploaded_file)
 
+            # Update session state after file upload
             st.session_state.df = df
             st.session_state.columns = df.columns.tolist()
 
+            # Handle temporary file for database insertion
             with tempfile.NamedTemporaryFile(delete=False, suffix=uploaded_file.name) as temp_file:
                 temp_file.write(uploaded_file.getvalue())
                 temp_path = temp_file.name
@@ -66,6 +70,9 @@ class SparkSearchApp:
     def render_sidebar(self):
         """Render sidebar with file upload and basic info."""
         with st.sidebar:
+            # Display the logo at the top of the sidebar
+            st.image('logo.png', use_container_width=True)  # Ensure the logo is in the same folder as app.py
+            
             st.header("Data Management")
             uploaded_file = st.file_uploader(
                 "Upload Data (CSV/Excel)",
@@ -88,11 +95,10 @@ class SparkSearchApp:
         """Create and return search filters based on user input."""
         if not st.session_state.columns or st.session_state.df is None:
             st.warning("Please upload a file first to see search options.", icon="⚠️")
-            return {}
+            return {}, []
 
         st.subheader("Search Criteria", anchor="search-criteria")
         filters = {}
-
         selected_columns = st.multiselect(
             "Select Columns to Filter",
             st.session_state.columns,
@@ -101,7 +107,7 @@ class SparkSearchApp:
 
         if not selected_columns:
             st.warning("Please select at least one column to filter.", icon="⚠️")
-            return {}
+            return {}, []
 
         for column in selected_columns:
             filter_type = st.radio(
@@ -120,18 +126,18 @@ class SparkSearchApp:
                 column_data = st.session_state.df[column]
 
                 if column_data.dtype in ['float64', 'int64']:  # Ensure it's a numeric column
-                    min_val = 0  # Set minimum to 0
+                    min_val = column_data.min()  # Min value from the column
                     max_val = column_data.max()  # Max value from the column
 
-                    # Create the slider component with gliding between 0 and the column max value
+                    # Create the slider component with gliding between min and max values
                     range_val = st.slider(
                         f"{column} Range",
                         min_value=int(min_val),
                         max_value=int(max_val),
-                        value=(0, int(max_val)),
+                        value=(int(min_val), int(max_val)),
                         step=1,
                         key=f"range_{column}",
-                        help=f"Filter {column} between 0 and {max_val}"
+                        help=f"Filter {column} between {min_val} and {max_val}"
                     )
 
                     filters[column] = {
@@ -140,7 +146,7 @@ class SparkSearchApp:
                 else:
                     st.warning(f"The column '{column}' is not numeric. Range filter cannot be applied.", icon="⚠️")
 
-        return filters
+        return filters, selected_columns
 
     def render_login_page(self):
         """Render the login page."""
@@ -163,35 +169,42 @@ class SparkSearchApp:
         """Render the main dashboard of the application."""
         st.title("Spark Search Platform")
         self.render_sidebar()
-        filters = self.create_search_filters()
+        
+        if st.session_state.df is not None:
+            filters, selected_columns = self.create_search_filters()
 
-        if st.button("Search Data", use_container_width=True):
-            if filters:
-                # Filtering the dataframe based on selected range
-                filtered_df = st.session_state.df
+            if st.button("Search Data", use_container_width=True):
+                if filters:
+                    # Filtering the dataframe based on selected range
+                    filtered_df = st.session_state.df.copy()
 
-                # Apply the range filters to the dataframe
-                for column, filter_values in filters.items():
-                    if "range" in filter_values:
-                        min_range, max_range = filter_values["range"]
-                        filtered_df = filtered_df[
-                            (filtered_df[column] >= min_range) & (filtered_df[column] <= max_range)
-                        ]
+                    # Apply the range filters to the dataframe
+                    for column, filter_values in filters.items():
+                        if "range" in filter_values:
+                            min_range, max_range = filter_values["range"]
+                            filtered_df = filtered_df[
+                                (filtered_df[column] >= min_range) & (filtered_df[column] <= max_range)
+                            ]
+                        elif "text" in filter_values:
+                            filtered_df = filtered_df[filtered_df[column].str.contains(filter_values["text"], case=False, na=False)]
 
-                # Store the filtered data in session state
-                st.session_state.filtered_results = filtered_df
+                    # Store the filtered data in session state and always display selected columns
+                    st.session_state.results = filtered_df[selected_columns]  # Always show selected columns
+                    st.session_state.search_performed = True
+                else:
+                    # Display selected columns without any filter if no search criteria
+                    st.session_state.results = st.session_state.df[selected_columns]
+                    st.session_state.search_performed = True
+                st.success(f"Displaying {len(st.session_state.results)} records", icon="✅")
 
-                st.session_state.search_performed = True
-                st.session_state.results = filtered_df
-            else:
-                st.warning("Please upload a file and set some search criteria first.", icon="⚠️")
-
-        if st.session_state.search_performed:
-            st.subheader(f"Search Results ({len(st.session_state.results)} records)", anchor="results")
-            if not st.session_state.results.empty:
-                st.dataframe(st.session_state.results, use_container_width=True)
-            else:
-                st.warning("No results found matching your criteria.", icon="⚠️")
+            if st.session_state.search_performed:
+                st.subheader(f"Search Results ({len(st.session_state.results)} records)", anchor="results")
+                if not st.session_state.results.empty:
+                    st.dataframe(st.session_state.results, use_container_width=True)
+                else:
+                    st.warning("No results found matching your criteria.", icon="⚠️")
+        else:
+            st.warning("Please upload a file first.")
 
     def run(self):
         """Run the application."""
@@ -253,4 +266,5 @@ class SparkSearchApp:
 if __name__ == "__main__":
     app = SparkSearchApp()
     app.run()
+
 
