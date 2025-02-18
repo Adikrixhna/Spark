@@ -31,16 +31,6 @@ class SparkSearchApp:
         if "df" not in st.session_state:
             st.session_state.df = None
 
-    def convert_salary_to_number(self, salary_str):
-        """Convert salary string like '3,20,000' to numeric value."""
-        try:
-            # Remove any non-numeric characters except commas
-            cleaned = ''.join(c for c in str(salary_str) if c.isdigit() or c == ',')
-            # Remove commas and convert to float
-            return float(cleaned.replace(',', ''))
-        except (ValueError, TypeError):
-            return None
-
     def handle_file_upload(self, uploaded_file):
         """Handle file upload and processing."""
         try:
@@ -76,8 +66,6 @@ class SparkSearchApp:
     def render_sidebar(self):
         """Render sidebar with file upload and basic info."""
         with st.sidebar:
-            # Add the logo to the sidebar
-            st.image("logo.png", width=200)  # Adjust the width of the logo
             st.header("Data Management")
             uploaded_file = st.file_uploader(
                 "Upload Data (CSV/Excel)",
@@ -132,27 +120,18 @@ class SparkSearchApp:
                 column_data = st.session_state.df[column]
 
                 if column_data.dtype in ['float64', 'int64']:  # Ensure it's a numeric column
-                    min_val = column_data.min()
-                    max_val = column_data.max()
+                    min_val = 0  # Set minimum to 0
+                    max_val = column_data.max()  # Max value from the column
 
-                    # Set reasonable defaults if min and max are the same
-                    if min_val == max_val:
-                        max_val = min_val + 1000
-
-                    # Set the step size for the slider
-                    value_range = max_val - min_val
-                    step = max(value_range / 100.0, 1000.0)
-
-                    # Create the slider component
+                    # Create the slider component with gliding between 0 and the column max value
                     range_val = st.slider(
                         f"{column} Range",
-                        min_value=float(min_val),  
-                        max_value=float(max_val),  
-                        value=(float(min_val), float(max_val)),  
-                        step=step,
+                        min_value=int(min_val),
+                        max_value=int(max_val),
+                        value=(0, int(max_val)),
+                        step=1,
                         key=f"range_{column}",
-                        format="₹{:.0f}",
-                        help=f"Min: ₹{min_val:,.0f}, Max: ₹{max_val:,.0f}"
+                        help=f"Filter {column} between 0 and {max_val}"
                     )
 
                     filters[column] = {
@@ -188,9 +167,22 @@ class SparkSearchApp:
 
         if st.button("Search Data", use_container_width=True):
             if filters:
-                results = st.session_state.db.search_resumes(filters)
+                # Filtering the dataframe based on selected range
+                filtered_df = st.session_state.df
+
+                # Apply the range filters to the dataframe
+                for column, filter_values in filters.items():
+                    if "range" in filter_values:
+                        min_range, max_range = filter_values["range"]
+                        filtered_df = filtered_df[
+                            (filtered_df[column] >= min_range) & (filtered_df[column] <= max_range)
+                        ]
+
+                # Store the filtered data in session state
+                st.session_state.filtered_results = filtered_df
+
                 st.session_state.search_performed = True
-                st.session_state.results = results
+                st.session_state.results = filtered_df
             else:
                 st.warning("Please upload a file and set some search criteria first.", icon="⚠️")
 
@@ -261,3 +253,4 @@ class SparkSearchApp:
 if __name__ == "__main__":
     app = SparkSearchApp()
     app.run()
+
