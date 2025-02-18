@@ -76,6 +76,8 @@ class SparkSearchApp:
     def render_sidebar(self):
         """Render sidebar with file upload and basic info."""
         with st.sidebar:
+            # Add the logo to the sidebar
+            st.image("logo.png", width=200)  # Adjust the width of the logo
             st.header("Data Management")
             uploaded_file = st.file_uploader(
                 "Upload Data (CSV/Excel)",
