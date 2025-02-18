@@ -223,6 +223,8 @@ class SparkSearchApp:
                     color: white !important;
                 }
 
+                .st-emotion-cache-1v0mbdj { display: none !important; } /* Hide GitHub icon */
+
                 
                 .sidebar .sidebar-content {
                     background-color: white !important;
