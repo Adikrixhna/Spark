@@ -223,6 +223,10 @@ class SparkSearchApp:
                     color: white !important;
                 }
 
+                header{
+                display:none;
+                }
+
                 .sidebar .sidebar-content {
                     background-color: white !important;
                     border-radius: 10px;
