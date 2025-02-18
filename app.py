@@ -202,7 +202,7 @@ class SparkSearchApp:
         login_button = st.button("Login")
 
         if login_button:
-            if username == "Admin" and password == "Admin123":
+            if username == "Admin" and password == "Admin@123":
                 st.session_state.logged_in = True
                 st.success("Login successful! Redirecting to the dashboard...", icon="✅")
                 st.rerun()
